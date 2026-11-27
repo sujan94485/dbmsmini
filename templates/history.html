@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Query History - AI-Enhanced Database Query Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon" aria-hidden="true">DB</div>
+                <div>
+                    <h1 class="brand-title">Query Assistant</h1>
+                    <p class="brand-subtitle">DBMS Mini Project</p>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h2 class="section-label">Navigation</h2>
+                <nav class="sidebar-nav" aria-label="Primary">
+                    <a href="/" class="nav-link">Dashboard</a>
+                    <a href="/history" class="nav-link active">Query History</a>
+                </nav>
+            </div>
+
+            <div class="sidebar-section">
+                <h2 class="section-label">System Status</h2>
+                <div class="status-list">
+                    <div class="status-item">
+                        <span class="status-dot status-ready"></span>
+                        <span>Flask Server</span>
+                        <span class="status-badge ready">Online</span>
+                    </div>
+                    <div class="status-item">
+                        <span id="db-status-dot" class="status-dot status-pending"></span>
+                        <div class="status-text-group">
+                            <span>MySQL Database</span>
+                            <small id="db-status-name" class="status-subtext">Checking...</small>
+                        </div>
+                        <span id="db-status-badge" class="status-badge pending">Checking</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-dot {{ 'status-ready' if gemini_configured else 'status-pending' }}"></span>
+                        <span>Gemini AI</span>
+                        <span class="status-badge {{ 'ready' if gemini_configured else 'pending' }}">
+                            {{ 'Ready' if gemini_configured else 'Not Set' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <p>Phase 5: History &amp; CSV Export</p>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div>
+                    <h2 class="page-title">Query History</h2>
+                    <p class="page-subtitle">Review previously generated SQL queries, execution statuses, and reuse questions on the dashboard.</p>
+                </div>
+                <a href="/" class="btn btn-secondary btn-sm">Back to Dashboard</a>
+            </header>
+
+            <section class="card" aria-labelledby="history-heading">
+                <div class="card-header explorer-header">
+                    <div>
+                        <h3 id="history-heading">Saved Queries</h3>
+                        <span class="helper-text">Ordered from most recent to oldest</span>
+                    </div>
+                    <div class="explorer-controls">
+                        <span id="history-count-badge" class="badge-muted">Loading...</span>
+                        <button type="button" id="refresh-history-btn" class="btn btn-secondary btn-sm">Refresh</button>
+                    </div>
+                </div>
+
+                <div id="history-error-banner" class="error-banner hidden" role="alert"></div>
+
+                <div id="history-list" class="history-list">
+                    <div class="empty-state">
+                        <p class="empty-title">Loading query history...</p>
+                        <p class="empty-desc">Fetching saved entries from MySQL.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/history.js') }}"></script>
+</body>
+</html>

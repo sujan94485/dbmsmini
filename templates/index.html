@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Enhanced Database Query Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon" aria-hidden="true">DB</div>
+                <div>
+                    <h1 class="brand-title">Query Assistant</h1>
+                    <p class="brand-subtitle">DBMS Mini Project</p>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h2 class="section-label">Navigation</h2>
+                <nav class="sidebar-nav" aria-label="Primary">
+                    <a href="/" class="nav-link active">Dashboard</a>
+                    <a href="/history" class="nav-link">Query History</a>
+                </nav>
+            </div>
+
+            <div class="sidebar-section">
+                <h2 class="section-label">System Status</h2>
+                <div class="status-list">
+                    <div class="status-item">
+                        <span class="status-dot status-ready"></span>
+                        <span>Flask Server</span>
+                        <span class="status-badge ready">Online</span>
+                    </div>
+                    <div class="status-item">
+                        <span id="db-status-dot" class="status-dot status-pending"></span>
+                        <div class="status-text-group">
+                            <span>MySQL Database</span>
+                            <small id="db-status-name" class="status-subtext">Checking...</small>
+                        </div>
+                        <span id="db-status-badge" class="status-badge pending">Checking</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-dot {{ 'status-ready' if gemini_configured else 'status-pending' }}"></span>
+                        <span>Gemini AI</span>
+                        <span class="status-badge {{ 'ready' if gemini_configured else 'pending' }}">
+                            {{ 'Ready' if gemini_configured else 'Not Set' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h2 class="section-label">Sample Questions</h2>
+                <div class="sample-list">
+                    <button type="button" class="sample-chip" data-query="Show all students who scored above 85 in DBMS.">
+                        Students scoring above 85 in DBMS
+                    </button>
+                    <button type="button" class="sample-chip" data-query="List the top 5 departments by total enrollment.">
+                        Top 5 departments by enrollment
+                    </button>
+                    <button type="button" class="sample-chip" data-query="Find courses with no assigned instructor.">
+                        Courses without an instructor
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <p>Phase 5: History &amp; CSV Export</p>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div>
+                    <h2 class="page-title">AI-Enhanced Database Query Assistant</h2>
+                    <p class="page-subtitle">Ask questions in plain English to generate and run safe read-only SQL queries.</p>
+                </div>
+                <span class="phase-pill">Phase 5 &middot; Complete</span>
+            </header>
+
+            <section class="card query-card" aria-labelledby="query-input-heading">
+                <div class="card-header">
+                    <h3 id="query-input-heading">Natural Language Query</h3>
+                    <span class="helper-text">Describe the data you want to retrieve</span>
+                </div>
+
+                <form id="query-form" class="query-form" onsubmit="return false;">
+                    <label for="nl-query-input" class="sr-only">Enter your question in natural language</label>
+                    <textarea
+                        id="nl-query-input"
+                        name="query"
+                        rows="4"
+                        placeholder="e.g., Show all students from the Computer Science department with CGPA greater than 8.5..."
+                    ></textarea>
+
+                    <div class="form-actions">
+                        <span id="ui-notice" class="ui-notice" role="status" aria-live="polite">
+                            Enter a question above and click Generate SQL.
+                        </span>
+                        <div class="button-group">
+                            <button type="button" id="clear-btn" class="btn btn-secondary">Clear</button>
+                            <button type="button" id="generate-sql-btn" class="btn btn-primary">
+                                Generate SQL
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <section class="results-grid">
+                <article class="card output-card">
+                    <div class="card-header">
+                        <h3>Generated SQL Query</h3>
+                        <div class="card-actions-inline">
+                            <span id="sql-status-badge" class="badge-muted">Preview</span>
+                            <button type="button" id="execute-sql-btn" class="btn btn-primary btn-sm" disabled>
+                                Execute Query
+                            </button>
+                        </div>
+                    </div>
+                    <pre class="sql-preview"><code id="generated-sql-code">-- Generated SQL will appear here when you click Generate SQL.</code></pre>
+                </article>
+
+                <article class="card output-card">
+                    <div class="card-header">
+                        <h3>Query Results</h3>
+                        <div class="card-actions-inline">
+                            <span id="results-meta-badge" class="badge-muted">MySQL Output</span>
+                            <button type="button" id="export-csv-btn" class="btn btn-secondary btn-sm" disabled>
+                                Export CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div id="query-results-error" class="error-banner hidden" role="alert"></div>
+                    <div id="query-results-truncation" class="info-banner hidden" role="status"></div>
+                    <div id="query-results-body">
+                        <div class="empty-state">
+                            <p class="empty-title">No results to display yet</p>
+                            <p class="empty-desc">Generate a SQL query first, then click Execute Query to view live MySQL results.</p>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <section class="card explorer-card" aria-labelledby="explorer-heading">
+                <div class="card-header explorer-header">
+                    <div>
+                        <h3 id="explorer-heading">Database Explorer</h3>
+                        <span class="helper-text">Browse live MySQL tables, column types, keys, and records</span>
+                    </div>
+                    <div class="explorer-controls">
+                        <span id="explorer-db-name" class="badge-muted">DB: --</span>
+                        <button type="button" id="refresh-db-btn" class="btn btn-secondary btn-sm">Refresh</button>
+                    </div>
+                </div>
+
+                <div id="db-error-banner" class="error-banner hidden" role="alert"></div>
+
+                <div class="explorer-layout">
+                    <div class="explorer-sidebar-panel">
+                        <div class="subpanel">
+                            <h4 class="subpanel-title">Tables</h4>
+                            <div id="table-list" class="table-list">
+                                <p class="muted-placeholder">Loading tables...</p>
+                            </div>
+                        </div>
+
+                        <div class="subpanel">
+                            <h4 class="subpanel-title">
+                                Schema Details
+                                <span id="selected-table-schema-label" class="schema-table-tag"></span>
+                            </h4>
+                            <div id="schema-details" class="schema-details">
+                                <p class="muted-placeholder">Select a table to inspect its columns and keys.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="explorer-records-panel">
+                        <div class="records-toolbar">
+                            <h4 class="subpanel-title">
+                                Table Records
+                                <span id="selected-table-records-label" class="schema-table-tag"></span>
+                            </h4>
+                            <span id="records-count-badge" class="badge-muted">0 rows</span>
+                        </div>
+                        <div id="table-records-container" class="records-table-wrapper">
+                            <div class="empty-state">
+                                <p class="empty-title">Select a table</p>
+                                <p class="empty-desc">Choose any table on the left to load its live records from MySQL.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
